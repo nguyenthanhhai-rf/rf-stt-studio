@@ -6,9 +6,6 @@ Công cụ Speech-to-Text tiếng Việt chạy trên Google Colab. Dán link Yo
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nguyenthanhhai-rf/rf-stt-studio/blob/main/RF_STT_Studio.ipynb)
 
-> Repo private — lần đầu mở, bật **Include private repos** trong Colab:
-> `File` → `Open notebook` → tab `GitHub` → tick ô đó rồi cấp quyền.
-
 ## Cách dùng
 
 1. Bấm badge **Open in Colab** ở trên.

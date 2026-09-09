@@ -255,7 +255,7 @@ with gr.Blocks(title="RF · Bóc băng tiếng Việt") as demo:
                 cookie_msg = gr.Markdown()
         with gr.Column(scale=4):
             status = gr.Markdown()
-            text = gr.Textbox(label="Transcript", lines=22, show_copy_button=True)
+            text = gr.Textbox(label="Transcript", lines=22, buttons=["copy"])
             files = gr.Files(label="Tải về")
 
     cookies.change(set_cookies, cookies, cookie_msg)
