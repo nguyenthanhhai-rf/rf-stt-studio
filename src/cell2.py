@@ -106,6 +106,19 @@ def fetch_audio(url):
     return found[0], safe_name(title)
 
 
+def media_duration(path):
+    """Độ dài thật của file, tính bằng giây. -1 nếu ffprobe không đọc được."""
+    p = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=nw=1:nk=1", str(path)],
+        capture_output=True, text=True,
+    )
+    try:
+        return float(p.stdout.strip())
+    except ValueError:
+        return -1.0
+
+
 def to_wav(src):
     wav = WORK / "audio16k.wav"
     wav.unlink(missing_ok=True)
@@ -201,8 +214,11 @@ def run(url, upload, model_label, progress=gr.Progress()):
         progress(0.10, desc="Đang tải audio…")
         src, name = fetch_audio(url)
 
+    src_dur = media_duration(src)
+
     progress(0.30, desc="Đang chuẩn hoá audio về 16kHz…")
     wav = to_wav(src)
+    wav_dur = media_duration(wav)
 
     short = model_label.split(" —")[0]
     progress(0.45, desc="Đang bóc băng bằng " + short + "… (lần đầu phải tải model về)")
@@ -222,9 +238,28 @@ def run(url, upload, model_label, progress=gr.Progress()):
         p.write_text(content, encoding="utf-8")
         paths.append(str(p))
 
-    mins = segs[-1]["end"] / 60
-    status = "✅ **%d đoạn · ~%.1f phút** · %s" % (len(segs), mins, short)
-    return text, paths, status
+    # Máy đo ở từng ranh giới: tầng nào làm mất nội dung sẽ tự lộ ra ở đây,
+    # thay vì trả về một transcript cụt trông như đã xong.
+    end = segs[-1]["end"]
+    lines = [
+        "✅ **%d đoạn** · %s · %d ký tự" % (len(segs), short, len(text)),
+        "",
+        "| Tầng | Độ dài |",
+        "|---|---|",
+        "| File tải về | %.1f phút |" % (src_dur / 60),
+        "| WAV 16kHz | %.1f phút |" % (wav_dur / 60),
+        "| Transcript dừng ở | %.1f phút |" % (end / 60),
+    ]
+    if src_dur > 0 and wav_dur > 0 and wav_dur < src_dur * 0.95:
+        lines.append("")
+        lines.append("⚠️ **ffmpeg cắt mất audio** — WAV ngắn hơn file gốc.")
+    if wav_dur > 0 and end < wav_dur * 0.8:
+        lines.append("")
+        lines.append(
+            "⚠️ **Model dừng sớm ở %.0f%% audio** — audio đủ dài, lỗi nằm ở khâu bóc băng."
+            % (100 * end / wav_dur)
+        )
+    return text, paths, "\n".join(lines)
 
 
 # -------------------------------------------------------------------- UI
